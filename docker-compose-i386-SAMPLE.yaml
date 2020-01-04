@@ -1,0 +1,12 @@
+version: '3.5'
+services:
+  mail-mailhog:
+    image: "tsle/mail-mailhog-i386:latest"
+    ports:
+      # SMTP Port:
+      - 1025:1025
+      # Webinterface Port:
+      - 8025:8025
+    restart: unless-stopped
+    stdin_open: false
+    tty: false

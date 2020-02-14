@@ -47,7 +47,7 @@ VAR_MYDIR="$(dirname "$VAR_MYDIR")"
 
 VAR_DC_SERVICE_DEF="apache"
 
-printUsageAndExit() {
+function printUsageAndExit() {
 	echo "Usage: $VAR_MYNAME <COMMAND> ..." >/dev/stderr
 	echo "Examples: $VAR_MYNAME up" >/dev/stderr
 	echo "          $VAR_MYNAME start" >/dev/stderr

@@ -134,7 +134,7 @@ VAR_PROJNAME="mmh"
 # ----------------------------------------------------------
 
 function _updateRemoteImages() {
-	local TMP_IMGLIST="$(grep "image:" docker-compose.yaml | grep -v -E ".*#.*image:" | grep "/" | awk '{print $2}' | tr -d \"\')"
+	local TMP_IMGLIST="$(grep "image:" "$VAR_DCY_INP" | grep -v -E ".*#.*image:" | grep "/" | awk '{print $2}' | tr -d \"\')"
 	[ -z "$TMP_IMGLIST" ] && return 0
 	local TMP_IMGENTRY
 	for TMP_IMGENTRY in $TMP_IMGLIST; do

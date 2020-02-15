@@ -4,6 +4,13 @@
 # by TS, May 2019
 #
 
+# ----------------------------------------------------------
+
+# update Docker Image from remote repository? [true|false]
+LCFG_UPDATE_REMOTE_IMAGE=true
+
+# ----------------------------------------------------------
+
 # @param string $1 Path
 # @param int $2 Recursion level
 #
@@ -45,6 +52,40 @@ VAR_MYDIR="$(dirname "$VAR_MYDIR")"
 
 # ----------------------------------------------------------
 
+# Outputs CPU architecture string
+#
+# @param string $1 debian_rootfs|debian_dist
+#
+# @return int EXITCODE
+function _getCpuArch() {
+	case "$(uname -m)" in
+		x86_64*)
+			echo -n "amd64"
+			;;
+		i686*)
+			echo -n "i386"
+			;;
+		aarch64*)
+			echo -n "arm64"
+			;;
+		armv7*)
+			echo -n "armhf"
+			;;
+		*)
+			echo "$VAR_MYNAME: Error: Unknown CPU architecture '$(uname -m)'" >/dev/stderr
+			return 1
+			;;
+	esac
+	return 0
+}
+
+_getCpuArch debian_dist >/dev/null || exit 1
+
+
+LVAR_DEBIAN_DIST="$(_getCpuArch debian_dist)"
+
+# ----------------------------------------------------------
+
 VAR_DC_SERVICE_DEF="apache"
 
 function printUsageAndExit() {
@@ -81,17 +122,37 @@ VAR_DCY_INP="docker-compose.yaml"
 
 VAR_PROJNAME="mmh"
 
-[ -f "$VAR_DCY_INP" ] || {
+[ ! -f "$VAR_DCY_INP" -a -f "docker-compose-${LVAR_DEBIAN_DIST}-SAMPLE.yaml" ] && {
+	cp "docker-compose-${LVAR_DEBIAN_DIST}-SAMPLE.yaml" "$VAR_DCY_INP" || exit 1
+}
+
+[ ! -f "$VAR_DCY_INP" ] && {
 	echo "$VAR_MYNAME: Error: File '$VAR_DCY_INP' not found. Aborting." >/dev/stderr
 	exit 1
 }
 
 # ----------------------------------------------------------
 
+function _updateRemoteImages() {
+	local TMP_IMGLIST="$(grep "image:" docker-compose.yaml | grep -v -E ".*#.*image:" | grep "/" | awk '{print $2}' | tr -d \"\')"
+	[ -z "$TMP_IMGLIST" ] && return 0
+	local TMP_IMGENTRY
+	for TMP_IMGENTRY in $TMP_IMGLIST; do
+		echo "$VAR_MYNAME: Updating image '${TMP_IMGENTRY}'..."
+		docker pull ${TMP_IMGENTRY} || return 1
+		echo
+	done
+	return 0
+}
+
 TMP_ADDITIONAL_OPT=
 if [ "$OPT_CMD" = "up" ]; then
 	# prevent Docker Compose from running in foreground
 	TMP_ADDITIONAL_OPT="--no-start"
+	#
+	if [ "$LCFG_UPDATE_REMOTE_IMAGE" = "true" ]; then
+		_updateRemoteImages || exit 1
+	fi
 fi
 
 if [ "$OPT_CMD" = "bash" ]; then
